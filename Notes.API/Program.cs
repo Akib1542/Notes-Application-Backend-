@@ -24,6 +24,9 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// allowing the webapi accept call from the client
+app.UseCors(policy => policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
+
 app.UseAuthorization();
 
 app.MapControllers();
