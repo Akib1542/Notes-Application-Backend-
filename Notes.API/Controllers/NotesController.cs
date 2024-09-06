@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Notes.API.Data;
 using Notes.API.Models.Entities;
+using System.Security.Claims;
 
 namespace Notes.API.Controllers
 {
@@ -78,6 +80,33 @@ namespace Notes.API.Controllers
             notesDbContext.Notes.Remove(existingNote);
             await notesDbContext.SaveChangesAsync();
             return Ok();
+        }
+
+        /*[HttpGet]
+        [ActionName("SearchNote")]
+        public async Task<IActionResult> SearchNote(string search)
+        {
+            var data = await notesDbContext.Notes.ToListAsync();
+            if (!string.IsNullOrEmpty(search))
+            {
+                search = search.ToLower();
+                data = data.Where(x => x.Description.ToLower().Contains(search)).ToList();
+            }
+            return Ok(data);
+        }*/
+
+        [HttpGet("search")]
+        public IActionResult SearchNotes(string query)
+        {
+            // Convert both the title/description and query to lowercase for case-insensitive search
+            var lowerCaseQuery = query.ToLower();
+
+            var notes = notesDbContext.Notes
+                .Where(n => n.Title.ToLower().Contains(lowerCaseQuery) ||
+                            n.Description.ToLower().Contains(lowerCaseQuery))
+                .ToList();
+
+            return Ok(notes);
         }
 
     }
