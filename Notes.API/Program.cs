@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Notes.API.Data;
+using Notes.API.Repository;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +14,17 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<NotesDbContext>(options => options.UseSqlServer(
     builder.Configuration.GetConnectionString("DefaultConnection")));
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAllOrigins", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
+builder.Services.AddScoped<IRepository, Repository>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -28,6 +40,8 @@ app.UseHttpsRedirection();
 app.UseCors(policy => policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
 
 app.UseAuthorization();
+
+app.UseCors("AllowAllOrigins");
 
 app.MapControllers();
 
