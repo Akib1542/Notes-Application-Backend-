@@ -1,111 +1,83 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
 using Notes.API.Data;
 using Notes.API.Models.Entities;
 using Notes.API.Repository;
-using System.Security.Claims;
 
 namespace Notes.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+
     public class NotesController : Controller
     {
-        private readonly NotesDbContext _notesDbContext;
         private readonly IRepository _repository;
 
         public NotesController(NotesDbContext notesDbContext, IRepository repository)
         {
-            _notesDbContext = notesDbContext;
             _repository = repository;
         }
 
         [HttpGet]
-        public async Task<IActionResult>GetAllNotes()
+        public async Task<ActionResult> GetAllNotesAsync(string? search, int pageIndex = 1, int pageSize = 10, int count = 0)
         {
-            //Get the notes from db
-            return Ok(await _notesDbContext.Notes.ToListAsync());
+            var notes = await _repository.GetSearchingNotes(search);
+            int dataCount = _repository.CountNotes(search);
+            var note = await _repository.GetNotes(pageIndex, pageSize, notes, dataCount);
+
+            return Ok(note);
         }
 
         [HttpGet]
         [Route("{id:Guid}")]
-        [ActionName("GetNoteById")]
-        public async Task<IActionResult>GetNoteById(Guid id)
+        [ActionName("GetNoteByIdAsync")]
+        public async Task<IActionResult> GetNoteByIdAsync(Guid id)
         {
-            var note = await _notesDbContext.Notes.FirstOrDefaultAsync(x => x.Id == id);
-            if(note == null)
+            var note = await _repository.GetNoteById(id);
+            if (note == null)
             {
                 return NotFound();
             }
-            return Ok(note); 
+            return Ok(note);
         }
 
         [HttpPost]
-        public async Task<IActionResult>AddNote(Note note)
+        public async Task<IActionResult> AddNoteAsync(Note note)
         {
-            note.Id = Guid.NewGuid();
-            await _notesDbContext.Notes.AddAsync(note);
-            await _notesDbContext.SaveChangesAsync();
-            return CreatedAtAction(nameof(AddNote), new {id = note.Id}, note);  
+            bool res = await _repository.GetAddNote(note);
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+            if(res == false)
+            {
+                return NotFound("Data Not Found!");
+            }
+            return CreatedAtAction(nameof(GetNoteByIdAsync), new {id = note.Id}, note);  
         }
 
         [HttpPut]
         [Route("{id:Guid}")]
-        public async Task<IActionResult> UpdateNote(Guid id, [FromBody] Note updatedNote)
+        public async Task<IActionResult> UpdateNoteAsync(Guid id, [FromBody] Note updatedNote)
         {
-            var existingNote = await _notesDbContext.Notes.FindAsync(id);
-            if(existingNote == null)
+            bool res = await _repository.GetUpdateNotes(updatedNote, id);
+            if(res == false)
             {
                 return NotFound();
             }
-
-            existingNote.Title = updatedNote.Title;
-            existingNote.Description = updatedNote.Description;
-            existingNote.IsVisible = updatedNote.IsVisible;
-
-            await _notesDbContext.SaveChangesAsync();
-
-            return Ok(existingNote);
+            return Ok(res);
         }
 
         [HttpDelete]
         [Route("{id:Guid}")]
-        
-        public async Task<IActionResult>DeleteNote(Guid id)
+        public async Task<IActionResult>DeleteNoteAsync(Guid id)
         {
-            var existingNote = await _notesDbContext.Notes.FindAsync(id);
-            if(existingNote == null)
+            bool res = await _repository.GetDeleteNotes(id);
+            if(res == false)
             {
                 return NotFound();
             }
-
-            _notesDbContext.Notes.Remove(existingNote);
-            await _notesDbContext.SaveChangesAsync();
-            return Ok();
+            return Ok("Notes Deleted!");
         }
-
-   
-        [HttpGet("search")]
-        public IActionResult SearchNotes(string query)
-        {
-            // Convert both the title/description and query to lowercase for case-insensitive search
-            var lowerCaseQuery = query.ToLower();
-
-            var notes = _notesDbContext.Notes
-                .Where(n => n.Title.ToLower().Contains(lowerCaseQuery) ||
-                            n.Description.ToLower().Contains(lowerCaseQuery))
-                .ToList();
-
-            return Ok(notes);
-        }
-
-        [HttpGet("GetPaginatedNotes")]
-        public async Task<ActionResult<object>> GetNotes(int pageIndex = 1, int pageSize = 10)
-        {
-            var notes = await _repository.GetNotes(pageIndex, pageSize);
-            return Ok(notes);
-        }
-
     }
 }
