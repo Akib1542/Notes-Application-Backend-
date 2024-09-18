@@ -5,12 +5,12 @@ namespace Notes.API.Repository
 {
     public interface IRepository
     {
+        Task<PaginatedList<Note>> GetNotesAsync(int pageIndex, int pageSize, IQueryable<Note> afterSearch, int cou);
+        Task<Note> GetNoteByIdAsync(Guid id);
+        Task<bool> AddNoteAsync(Note note);
+        Task<bool> UpdateNoteAsync(Note updatedNote, Guid id);
+        Task<bool> DeleteNoteAsync(Guid id);
+        Task<IQueryable<Note>> SearchNotesAsync(string? search);
         int CountNotes(string? search);
-        Task<bool> GetAddNote(Note note);
-        Task<bool> GetDeleteNotes(Guid id);
-        Task<PaginatedList<Note>>GetNotes (int pageIndex, int pageSize, IQueryable<Note> afterSearch, int cou);
-        Task<IQueryable<Note>> GetSearchingNotes(string? search);
-        Task<Note> GetNoteById(Guid id);
-        Task<bool> GetUpdateNotes(Note updatedNote, Guid id);
     }
 }

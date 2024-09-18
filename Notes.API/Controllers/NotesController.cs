@@ -21,9 +21,9 @@ namespace Notes.API.Controllers
         [HttpGet]
         public async Task<ActionResult> GetAllNotesAsync(string? search, int pageIndex = 1, int pageSize = 10, int count = 0)
         {
-            var notes = await _repository.GetSearchingNotes(search);
+            var notes = await _repository.SearchNotesAsync(search);
             int dataCount = _repository.CountNotes(search);
-            var note = await _repository.GetNotes(pageIndex, pageSize, notes, dataCount);
+            var note = await _repository.GetNotesAsync(pageIndex, pageSize, notes, dataCount);
 
             return Ok(note);
         }
@@ -33,7 +33,7 @@ namespace Notes.API.Controllers
         [ActionName("GetNoteByIdAsync")]
         public async Task<IActionResult> GetNoteByIdAsync(Guid id)
         {
-            var note = await _repository.GetNoteById(id);
+            var note = await _repository.GetNoteByIdAsync(id);
             if (note == null)
             {
                 return NotFound();
@@ -44,7 +44,7 @@ namespace Notes.API.Controllers
         [HttpPost]
         public async Task<IActionResult> AddNoteAsync(Note note)
         {
-            bool res = await _repository.GetAddNote(note);
+            bool res = await _repository.AddNoteAsync(note);
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
@@ -60,7 +60,7 @@ namespace Notes.API.Controllers
         [Route("{id:Guid}")]
         public async Task<IActionResult> UpdateNoteAsync(Guid id, [FromBody] Note updatedNote)
         {
-            bool res = await _repository.GetUpdateNotes(updatedNote, id);
+            bool res = await _repository.UpdateNoteAsync(updatedNote, id);
             if(res == false)
             {
                 return NotFound();
@@ -72,7 +72,7 @@ namespace Notes.API.Controllers
         [Route("{id:Guid}")]
         public async Task<IActionResult>DeleteNoteAsync(Guid id)
         {
-            bool res = await _repository.GetDeleteNotes(id);
+            bool res = await _repository.DeleteNoteAsync(id);
             if(res == false)
             {
                 return NotFound();
