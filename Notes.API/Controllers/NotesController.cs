@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Notes.API.Data;
+using Notes.API.Manager;
 using Notes.API.Models.Entities;
 using Notes.API.Repository;
 
@@ -11,21 +10,18 @@ namespace Notes.API.Controllers
 
     public class NotesController : Controller
     {
-        private readonly IRepository _repository;
+        private readonly INoteService _noteService;
 
-        public NotesController(NotesDbContext notesDbContext, IRepository repository)
+        public NotesController(IRepository repository, INoteService noteService)
         {
-            _repository = repository;
+            _noteService = noteService;
         }
 
         [HttpGet]
         public async Task<ActionResult> GetAllNotesAsync(string? search, int pageIndex = 1, int pageSize = 10, int count = 0)
         {
-            var notes = await _repository.SearchNotesAsync(search);
-            int dataCount = _repository.CountNotes(search);
-            var note = await _repository.GetNotesAsync(pageIndex, pageSize, notes, dataCount);
-
-            return Ok(note);
+            var notes = await _noteService.GetAllNotesAsync(pageIndex, pageSize, search);
+            return Ok(notes);
         }
 
         [HttpGet]
@@ -33,10 +29,10 @@ namespace Notes.API.Controllers
         [ActionName("GetNoteByIdAsync")]
         public async Task<IActionResult> GetNoteByIdAsync(Guid id)
         {
-            var note = await _repository.GetNoteByIdAsync(id);
-            if (note == null)
+            var note = await _noteService.GetNoteByIdAsync(id);
+            if (!ModelState.IsValid)
             {
-                return NotFound();
+                return BadRequest(ModelState);
             }
             return Ok(note);
         }
@@ -44,40 +40,32 @@ namespace Notes.API.Controllers
         [HttpPost]
         public async Task<IActionResult> AddNoteAsync(Note note)
         {
-            bool res = await _repository.AddNoteAsync(note);
+            var noteAdded = await _noteService.AddAsync(note);
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
-            if(res == false)
-            {
-                return NotFound("Data Not Found!");
-            }
-            return CreatedAtAction(nameof(GetNoteByIdAsync), new {id = note.Id}, note);  
+            return CreatedAtAction(nameof(GetNoteByIdAsync), new {id = noteAdded.Id}, noteAdded);  
         }
 
         [HttpPut]
         [Route("{id:Guid}")]
         public async Task<IActionResult> UpdateNoteAsync(Guid id, [FromBody] Note updatedNote)
         {
-            bool res = await _repository.UpdateNoteAsync(updatedNote, id);
-            if(res == false)
+            var note = await _noteService.UpdateAsync(updatedNote, id);
+            if (!ModelState.IsValid)
             {
-                return NotFound();
+                return BadRequest(ModelState);
             }
-            return Ok(res);
+            return Ok();
         }
 
         [HttpDelete]
         [Route("{id:Guid}")]
         public async Task<IActionResult>DeleteNoteAsync(Guid id)
         {
-            bool res = await _repository.DeleteNoteAsync(id);
-            if(res == false)
-            {
-                return NotFound();
-            }
-            return Ok("Notes Deleted!");
+            await _noteService.DeleteAsync(id);
+            return Ok();
         }
     }
 }

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Notes.API.Data;
+using Notes.API.Manager;
 using Notes.API.Repository;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -25,6 +26,7 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddScoped<IRepository, Repository>();
+builder.Services.AddScoped<INoteService, NoteService>();    
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
